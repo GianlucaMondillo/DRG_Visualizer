@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Visualizzatore DRG v24 - Confronto Pesi</title>
+<style>
+  :root {
+    --bg-0: #06090c;
+    --bg-1: #0b1014;
+    --bg-2: #0f1620;
+    --bg-3: #141d2a;
+    --line: #1f2d3f;
+    --line-bright: #2a3d56;
+    --txt: #c8d4e0;
+    --txt-dim: #6a7d92;
+    --txt-faint: #455769;
+    --neon: #00ff9c;
+    --neon-dim: #00b870;
+    --cyan: #5ce1e6;
+    --amber: #ffb000;
+    --magenta: #ff2e8e;
+    --red: #ff3b3b;
+    --mono: "JetBrains Mono", "Fira Code", "Consolas", "Monaco", "Courier New", monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    font-family: var(--mono);
+    margin: 0;
+    background:
+      radial-gradient(circle at 20% 0%, rgba(0,255,156,.06), transparent 50%),
+      radial-gradient(circle at 90% 100%, rgba(92,225,230,.05), transparent 50%),
+      var(--bg-0);
+    color: var(--txt);
+    font-size: 13px;
+    line-height: 1.45;
+    overflow: hidden;
+    position: relative;
+  }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 2px,
+      rgba(255,255,255,.012) 3px,
+      transparent 4px
+    );
+    z-index: 1000;
+  }
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,.55) 100%);
+    z-index: 1001;
+  }
+  header {
+    background: linear-gradient(180deg, var(--bg-2) 0%, var(--bg-1) 100%);
+    border-bottom: 1px solid var(--line);
+    padding: 10px 18px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: relative;
+  }
+  header::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: -1px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--neon), transparent);
+    opacity: .5;
+  }
+  .logo {
+    color: var(--neon);
+    text-shadow: 0 0 10px var(--neon-dim);
+    font-weight: 700;
+    letter-spacing: 2px;
+    font-size: 14px;
+    border: 1px solid var(--neon-dim);
+    padding: 4px 10px;
+    border-radius: 2px;
+    background: rgba(0,255,156,.05);
+  }
+  header h1 {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--txt);
+    flex: 1;
+  }
+  header h1 .accent { color: var(--cyan); }
+  .stats-bar {
+    display: flex;
+    gap: 14px;
+    font-size: 11px;
+    color: var(--txt-dim);
+  }
+  .stat .k { color: var(--txt-faint); margin-right: 4px; text-transform: uppercase; letter-spacing: .5px; }
+  .stat .v { color: var(--cyan); font-weight: 700; }
+  .stat .v.online { color: var(--neon); }
+  .stat .v.online::before {
+    content: "";
+    display: inline-block;
+    width: 6px; height: 6px;
+    background: var(--neon);
+    border-radius: 50%;
+    margin-right: 5px;
+    box-shadow: 0 0 6px var(--neon);
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse { 50% { opacity: .35; } }
+
+  main {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 12px;
+    height: calc(100vh - 47px);
+  }
+  .panel {
+    background: linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 100%);
+    border: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
+  .panel::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0;
+    width: 12px; height: 12px;
+    border-top: 1px solid var(--neon);
+    border-left: 1px solid var(--neon);
+  }
+  .panel::after {
+    content: "";
+    position: absolute;
+    bottom: 0; right: 0;
+    width: 12px; height: 12px;
+    border-bottom: 1px solid var(--neon);
+    border-right: 1px solid var(--neon);
+  }
+  .panel h2 {
+    margin: 0;
+    padding: 8px 14px;
+    background: var(--bg-2);
+    border-bottom: 1px solid var(--line);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--neon);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-shadow: 0 0 8px rgba(0,255,156,.4);
+  }
+  .panel h2 .title-tag::before { content: "> "; color: var(--cyan); }
+  .panel h2 .count {
+    background: transparent;
+    color: var(--cyan);
+    border: 1px solid var(--line-bright);
+    padding: 2px 8px;
+    font-size: 10px;
+    letter-spacing: 1px;
+    font-family: var(--mono);
+  }
+  .search-box {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    background: var(--bg-1);
+  }
+  .input-wrap {
+    flex: 1;
+    min-width: 200px;
+    position: relative;
+  }
+  .input-wrap::before {
+    content: ">";
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--neon);
+    font-weight: 700;
+    pointer-events: none;
+    text-shadow: 0 0 6px var(--neon-dim);
+  }
+  .search-box input[type="text"] {
+    width: 100%;
+    padding: 9px 12px 9px 26px;
+    background: var(--bg-0);
+    border: 1px solid var(--line-bright);
+    color: var(--neon);
+    font-family: var(--mono);
+    font-size: 13px;
+    outline: none;
+    caret-color: var(--neon);
+    text-shadow: 0 0 5px var(--neon-dim);
+  }
+  .search-box input[type="text"]::placeholder {
+    color: var(--txt-faint);
+    text-shadow: none;
+  }
+  .search-box input[type="text"]:focus {
+    border-color: var(--neon);
+    box-shadow: 0 0 0 1px var(--neon-dim), inset 0 0 12px rgba(0,255,156,.08);
+  }
+  .search-box select {
+    padding: 9px 8px;
+    background: var(--bg-0);
+    border: 1px solid var(--line-bright);
+    color: var(--cyan);
+    font-family: var(--mono);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+  }
+  .search-box select:focus {
+    outline: none;
+    border-color: var(--cyan);
+  }
+  .results, .selected {
+    flex: 1;
+    overflow-y: auto;
+    padding: 6px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-bright) transparent;
+  }
+  .results::-webkit-scrollbar, .selected::-webkit-scrollbar { width: 8px; }
+  .results::-webkit-scrollbar-track, .selected::-webkit-scrollbar-track { background: var(--bg-0); }
+  .results::-webkit-scrollbar-thumb, .selected::-webkit-scrollbar-thumb {
+    background: var(--line-bright);
+    border: 2px solid var(--bg-0);
+  }
+  .results::-webkit-scrollbar-thumb:hover { background: var(--neon-dim); }
+
+  .item {
+    border: 1px solid var(--line);
+    background: var(--bg-1);
+    padding: 8px 12px;
+    margin-bottom: 4px;
+    cursor: pointer;
+    transition: all .12s ease;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    position: relative;
+    border-left: 2px solid var(--line);
+  }
+  .item:hover {
+    border-color: var(--neon-dim);
+    border-left-color: var(--neon);
+    background: var(--bg-2);
+    box-shadow: inset 0 0 14px rgba(0,255,156,.06);
+  }
+  .item.selected-row {
+    border-color: var(--cyan);
+    border-left-color: var(--cyan);
+    background: rgba(92,225,230,.05);
+  }
+  .item.selected-row::after {
+    content: "[ SEL ]";
+    position: absolute;
+    top: 4px; right: 6px;
+    color: var(--cyan);
+    font-size: 9px;
+    letter-spacing: 1px;
+  }
+  .item .info { flex: 1; min-width: 0; }
+  .item .code {
+    color: var(--neon);
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-shadow: 0 0 5px rgba(0,255,156,.4);
+  }
+  .item .desc {
+    font-size: 12.5px;
+    color: var(--txt);
+    margin-top: 3px;
+    line-height: 1.45;
+  }
+  .item .meta {
+    font-size: 10px;
+    color: var(--txt-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-right: 12px;
+    margin-top: 4px;
+    display: inline-block;
+  }
+  .item .meta .label { color: var(--txt-faint); }
+  .item .peso {
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--cyan);
+    min-width: 75px;
+    text-align: right;
+    text-shadow: 0 0 8px rgba(92,225,230,.5);
+    letter-spacing: 1px;
+  }
+  .badge {
+    display: inline-block;
+    padding: 1px 6px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    border: 1px solid;
+    margin-left: 6px;
+  }
+  .badge-C { color: var(--magenta); border-color: var(--magenta); background: rgba(255,46,142,.08); }
+  .badge-M { color: var(--neon); border-color: var(--neon-dim); background: rgba(0,255,156,.08); }
+  .badge-NA { color: var(--txt-dim); border-color: var(--line-bright); background: var(--bg-2); }
+  .winner {
+    border-color: var(--amber) !important;
+    border-left-color: var(--amber) !important;
+    background: rgba(255,176,0,.07) !important;
+    box-shadow: 0 0 18px rgba(255,176,0,.18), inset 0 0 22px rgba(255,176,0,.05) !important;
+    animation: winnerGlow 2.4s ease-in-out infinite;
+  }
+  @keyframes winnerGlow {
+    50% { box-shadow: 0 0 28px rgba(255,176,0,.32), inset 0 0 26px rgba(255,176,0,.09); }
+  }
+  .winner::before {
+    content: "// MAX_PESO //";
+    position: absolute;
+    top: -8px;
+    left: 10px;
+    background: var(--bg-0);
+    color: var(--amber);
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 8px;
+    letter-spacing: 2px;
+    border: 1px solid var(--amber);
+    text-shadow: 0 0 6px var(--amber);
+  }
+  .winner .peso { color: var(--amber); text-shadow: 0 0 10px rgba(255,176,0,.6); }
+  .winner .code { color: var(--amber); text-shadow: 0 0 5px rgba(255,176,0,.5); }
+
+  .empty {
+    text-align: center;
+    color: var(--txt-faint);
+    padding: 40px 16px;
+    font-size: 12px;
+    letter-spacing: 1px;
+  }
+  .empty::before { content: "[ "; color: var(--txt-faint); }
+  .empty::after { content: " ]"; color: var(--txt-faint); }
+
+  .summary {
+    padding: 10px 14px;
+    background: var(--bg-2);
+    border-top: 1px solid var(--line);
+    font-size: 11px;
+    color: var(--txt-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+  }
+  .summary::before {
+    content: "$ ";
+    color: var(--neon);
+    margin-right: 6px;
+    text-shadow: 0 0 5px var(--neon-dim);
+  }
+  .summary strong {
+    color: var(--amber);
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-shadow: 0 0 6px rgba(255,176,0,.4);
+  }
+  .clear-btn {
+    background: transparent;
+    color: var(--red);
+    border: 1px solid var(--red);
+    padding: 3px 10px;
+    font-family: var(--mono);
+    font-size: 10px;
+    cursor: pointer;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin-left: 8px;
+    transition: all .15s;
+  }
+  .clear-btn:hover {
+    background: var(--red);
+    color: var(--bg-0);
+    box-shadow: 0 0 12px rgba(255,59,59,.5);
+  }
+  .remove-x {
+    background: transparent;
+    border: 1px solid var(--line-bright);
+    color: var(--red);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 700;
+    width: 22px; height: 22px;
+    line-height: 1;
+    font-family: var(--mono);
+    transition: all .12s;
+  }
+  .remove-x:hover {
+    background: var(--red);
+    color: var(--bg-0);
+    border-color: var(--red);
+  }
+  @media (max-width: 900px) {
+    main { grid-template-columns: 1fr; height: auto; }
+    body { overflow: auto; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <span class="logo">DRG//v24</span>
+  <h1>Diagnosis Related Groups <span class="accent">// peso analyzer</span></h1>
+  <div class="stats-bar">
+    <span class="stat"><span class="k">DB</span><span class="v" id="dbCount">0</span></span>
+    <span class="stat"><span class="k">SEL</span><span class="v" id="selStat">0</span></span>
+    <span class="stat"><span class="k">SYS</span><span class="v online">ONLINE</span></span>
+  </div>
+</header>
+<main>
+  <section class="panel">
+    <h2><span class="title-tag">query_drg</span> <span class="count" id="resultCount">0</span></h2>
+    <div class="search-box">
+      <div class="input-wrap">
+        <input type="text" id="searchInput" placeholder="search descrizione | codice | mdc..." autocomplete="off" spellcheck="false">
+      </div>
+      <select id="filterTipo">
+        <option value="">[ ALL ]</option>
+        <option value="C">[ CHIRURGICO ]</option>
+        <option value="M">[ MEDICO ]</option>
+      </select>
+    </div>
+    <div class="results" id="results"></div>
+  </section>
+
+  <section class="panel">
+    <h2>
+      <span class="title-tag">compare_buffer</span>
+      <span>
+        <span class="count" id="selCount">0</span>
+        <button class="clear-btn" id="clearBtn">// purge</button>
+      </span>
+    </h2>
+    <div class="selected" id="selected"></div>
+    <div class="summary" id="summary"></div>
+  </section>
+</main>
+
+<script>
+const RAW_DRG_DATA = `001 1 C Craniotomia, eta > 17 anni con CC 4,1798 53
+002 1 C Craniotomia, eta > 17 anni senza CC 3,1739 34
+003 1 C Craniotomia, eta < 18 anni 2,3194 40
+006 1 C Decompressione del tunnel carpale 0,7369 4
+007 1 C Interventi su nervi periferici e cranici e altri interventi su sistema nervoso con CC 2,3427 39
+008 1 C Interventi su nervi periferici e cranici e altri interventi su sistema nervoso senza CC 1,5811 10
+009 1 M Malattie e traumatismi del midollo spinale 1,2757 24
+010 1 M Neoplasie del sistema nervoso con CC 1,3787 33
+011 1 M Neoplasie del sistema nervoso senza CC 1,0329 32
+012 1 M Malattie degenerative del sistema nervoso 0,9103 23
+013 1 M Sclerosi multipla e atassia cerebellare 0,7921 17
+014 1 M Emorragia intracranica o infarto cerebrale 1,2605 30
+015 1 M Malattie cerebrovascolari acute aspecifiche e occlusione precerebrale senza infarto 0,8996 23
+016 1 M Malattie cerebrovascolari aspecifiche con CC 1,2715 24
+017 1 M Malattie cerebrovascolari aspecifiche senza CC 0,8471 17
+018 1 M Malattie dei nervi cranici e periferici con CC 1,0912 24
+019 1 M Malattie dei nervi cranici e periferici senza CC 0,7168 20
+021 1 M Meningite virale 0,7956 22
+022 1 M Encefalopatia ipertensiva 0,9386 14
+023 1 M Stato stuporoso e coma di origine non traumatica 0,8025 27
+026 1 M Convulsioni e cefalea, eta < 18 anni 0,4853 10
+027 1 M Stato stuporoso e coma di origine traumatica, coma > 1 ora 1,5179 28
+028 1 M Stato stuporoso e coma di origine traumatica, coma < 1 ora, eta > 17 anni con CC 1,3120 27
+029 1 M Stato stuporoso e coma di origine traumatica, coma < 1 ora, eta > 17 anni senza CC 0,8898 18
+030 1 M Stato stuporoso e coma di origine traumatica, coma < 1 ora, eta < 18 anni 0,4185 4
+031 1 M Commozione cerebrale, eta > 17 anni con CC 1,1124 17
+032 1 M Commozione cerebrale, eta > 17 anni senza CC 0,7013 10
+033 1 M Commozione cerebrale, eta < 18 anni 0,4028 4
+034 1 M Altre malattie del sistema nervoso con CC 1,1364 31
+035 1 M Altre malattie del sistema nervoso senza CC 0,6807 21
+036 2 C Interventi sulla retina 0,8348 10
+037 2 C Interventi sull'orbita 1,4700 17
+038 2 C Interventi primari sull'iride 0,8505 10
+039 2 C Interventi sul cristallino con o senza vitrectomia 0,4834 4
+040 2 C Interventi sulle strutture extraoculari eccetto l'orbita, eta > 17 anni 0,8800 7
+041 2 C Interventi sulle strutture extraoculari eccetto l'orbita, eta < 18 anni 0,5851 4
+042 2 C Interventi sulle strutture intraoculari eccetto retina, iride e cristallino 0,8445 10
+043 2 M Ifema 0,4338 10
+044 2 M Infezioni acute maggiori dell'occhio 0,6302 20
+045 2 M Malattie neurologiche dell'occhio 0,7576 17
+046 2 M Altre malattie dell'occhio, eta > 17 anni con CC 0,8331 24
+047 2 M Altre malattie dell'occhio, eta > 17 anni senza CC 0,5865 14
+048 2 M Altre malattie dell'occhio, eta < 18 anni 0,4041 10
+049 3 C Interventi maggiori sul capo e sul collo 2,0117 35
+050 3 C Sialoadenectomia 1,2243 11
+051 3 C Interventi sulle ghiandole salivari eccetto sialoadenectomia 1,0207 10
+052 3 C Riparazione di cheiloschisi e di palatoschisi 1,0245 14
+053 3 C Interventi su seni e mastoide, eta > 17 anni 0,9386 7
+054 3 C Interventi su seni e mastoide, eta < 18 anni 1,0271 10
+055 3 C Miscellanea di interventi su orecchio, naso, bocca e gola 0,8198 4
+056 3 C Rinoplastica 0,9354 7
+057 3 C Interventi su tonsille e adenoidi eccetto solo tonsillectomia e/o adenoidectomia, eta >17 anni 0,5965 7
+058 3 C Interventi su tonsille e adenoidi eccetto solo tonsillectomia e/o adenoidectomia, eta < 18 anni 0,5327 4
+059 3 C Tonsillectomia e/o adenoidectomia, eta > 17 anni 0,5892 7
+060 3 C Tonsillectomia e/o adenoidectomia, eta < 18 anni 0,3999 4
+061 3 C Miringotomia con inserzione di tubo, eta > 17 anni 1,1514 7
+062 3 C Miringotomia con inserzione di tubo, eta < 18 anni 0,5501 4
+063 3 C Altri interventi su orecchio, naso, bocca e gola 1,4586 13
+064 3 M Neoplasie maligne di orecchio, naso, bocca e gola 1,1392 28
+065 3 M Alterazioni dell'equilibrio 0,5827 13
+066 3 M Epistassi 0,5555 13
+067 3 M Epiglottite 0,5478 10
+068 3 M Otite media e infezioni alte vie respiratorie, eta > 17 anni con CC 0,6264 16
+069 3 M Otite media e infezioni alte vie respiratorie, eta > 17 anni senza CC 0,4364 10
+070 3 M Otite media e infezioni alte vie respiratorie, eta < 18 anni 0,3156 7
+071 3 M Laringotracheite 0,2391 10
+072 3 M Traumatismi e deformita del naso 0,6547 10
+073 3 M Altre diagnosi relative a orecchio, naso, bocca e gola, eta > 17 anni 0,6101 13
+074 3 M Altre diagnosi relative a orecchio, naso, bocca e gola, eta < 18 anni 0,3479 7
+075 4 C Interventi maggiori sul torace 2,3960 28
+076 4 C Altri interventi sull'apparato respiratorio con CC 2,4914 44
+077 4 C Altri interventi sull'apparato respiratorio senza CC 1,4990 31
+078 4 M Embolia polmonare 1,3409 31
+079 4 M Infezioni e infiammazioni respiratorie, eta > 17 anni con CC 1,7612 40
+080 4 M Infezioni e infiammazioni respiratorie, eta > 17 anni senza CC 1,2661 44
+081 4 M Infezioni e infiammazioni respiratorie, eta < 18 anni 2,1163 27
+082 4 M Neoplasie dell'apparato respiratorio 1,3292 34
+083 4 M Traumi maggiori del torace con CC 0,8415 20
+084 4 M Traumi maggiori del torace senza CC 0,5879 10
+085 4 M Versamento pleurico con CC 1,3703 30
+086 4 M Versamento pleurico senza CC 1,0366 30
+087 4 M Edema polmonare e insufficienza respiratoria 1,2243 27
+088 4 M Malattia polmonare cronica ostruttiva 0,8209 21
+089 4 M Polmonite semplice e pleurite, eta > 17 anni con CC 1,1394 28
+090 4 M Polmonite semplice e pleurite, eta > 17 anni senza CC 0,7579 24
+091 4 M Polmonite semplice e pleurite, eta < 18 anni 0,4735 14
+092 4 M Malattia polmonare interstiziale con CC 1,2842 27
+093 4 M Malattia polmonare interstiziale senza CC 0,9037 23
+094 4 M Pneumotorace con CC 1,2102 27
+095 4 M Pneumotorace senza CC 0,6905 17
+096 4 M Bronchite e asma, eta > 17 anni con CC 0,8033 18
+097 4 M Bronchite e asma, eta > 17 anni senza CC 0,5563 17
+098 4 M Bronchite e asma, eta < 18 anni 0,3816 10
+099 4 M Segni e sintomi respiratori con CC 0,8876 27
+100 4 M Segni e sintomi respiratori senza CC 0,4835 14
+101 4 M Altre diagnosi relative all'apparato respiratorio con CC 0,9305 24
+102 4 M Altre diagnosi relative all'apparato respiratorio senza CC 0,6018 13
+103 Pre C Trapianto di cuore o impianto di sistema di assistenza cardiaca 14,5725 91
+104 5 C Interventi sulle valvole cardiache e altri interventi maggiori cardiotoracici con cateterismo cardiaco 6,0620 35
+105 5 C Interventi sulle valvole cardiache e altri interventi maggiori cardiotoracici senza cateterismo cardiaco 4,5572 28
+106 5 C Bypass coronarico con PTCA 5,4736 39
+108 5 C Altri interventi cardiotoracici 4,1166 37
+110 5 C Interventi maggiori sul sistema cardiovascolare con CC 3,3918 33
+111 5 C Interventi maggiori sul sistema cardiovascolare senza CC 2,5742 24
+113 5 C Amputazione per disturbi circolatori eccetto amputazione arto superiore e dita piede 3,1389 57
+114 5 C Amputazione arto superiore e dita piede per malattie apparato circolatorio 1,8488 45
+117 5 C Revisione del pacemaker cardiaco, eccetto sostituzione 1,0645 17
+118 5 C Sostituzione di pacemaker cardiaco 1,0532 7
+119 5 C Legatura e stripping di vene 0,7350 4
+120 5 C Altri interventi sull'apparato circolatorio 2,0581 37
+121 5 M Malattie cardiovascolari con infarto miocardico acuto e complicanze maggiori, dimessi vivi 1,5817 21
+122 5 M Malattie cardiovascolari con infarto miocardico acuto senza complicanze maggiori, dimessi vivi 1,2157 17
+123 5 M Malattie cardiovascolari con infarto miocardico acuto, morti 1,3033 23
+124 5 M Malattie cardiovascolari eccetto infarto miocardico acuto, con cateterismo cardiaco e diagnosi complicata 1,1950 21
+125 5 M Malattie cardiovascolari eccetto infarto miocardico acuto, con cateterismo cardiaco e diagnosi non complicata 0,7002 7
+126 5 M Endocardite acuta e subacuta 3,7891 74
+127 5 M Insufficienza cardiaca e shock 1,0270 21
+128 5 M Tromboflebite delle vene profonde 0,7518 21
+129 5 M Arresto cardiaco senza causa apparente 1,3124 32
+130 5 M Malattie vascolari periferiche con CC 1,0117 23
+131 5 M Malattie vascolari periferiche senza CC 0,5993 21
+132 5 M Aterosclerosi con CC 0,8086 20
+133 5 M Aterosclerosi senza CC 0,6284 17
+134 5 M Ipertensione 0,6701 17
+135 5 M Malattie cardiache congenite e valvolari, eta > 17 anni con CC 0,9689 24
+136 5 M Malattie cardiache congenite e valvolari, eta > 17 anni senza CC 0,6748 17
+137 5 M Malattie cardiache congenite e valvolari, eta < 18 anni 0,8484 10
+138 5 M Aritmia e alterazioni della conduzione cardiaca con CC 0,8028 17
+139 5 M Aritmia e alterazioni della conduzione cardiaca senza CC 0,5223 10
+140 5 M Angina pectoris 0,6197 14
+141 5 M Sincope e collasso con CC 0,7693 20
+142 5 M Sincope e collasso senza CC 0,5969 13
+143 5 M Dolore toracico 0,4879 10
+144 5 M Altre diagnosi relative all'apparato circolatorio con CC 1,1779 23
+145 5 M Altre diagnosi relative all'apparato circolatorio senza CC 0,6869 21
+146 6 C Resezione rettale con CC 2,9562 45
+147 6 C Resezione rettale senza CC 2,1564 37
+149 6 C Interventi maggiori su intestino crasso e tenue senza CC 1,9057 28
+150 6 C Lisi di aderenze peritoneali con CC 2,3632 30
+151 6 C Lisi di aderenze peritoneali senza CC 1,5241 17
+152 6 C Interventi minori su intestino crasso e tenue con CC 1,9591 33
+153 6 C Interventi minori su intestino crasso e tenue senza CC 1,3960 20
+155 6 C Interventi su esofago, stomaco e duodeno, eta > 17 anni senza CC 2,1457 34
+156 6 C Interventi su esofago, stomaco e duodeno, eta < 18 anni 1,2426 24
+157 6 C Interventi su ano e stoma con CC 1,1158 21
+158 6 C Interventi su ano e stoma senza CC 0,6093 10
+159 6 C Interventi per ernia, eccetto inguinale e femorale, eta > 17 anni con CC 1,4492 27
+160 6 C Interventi per ernia, eccetto inguinale e femorale, eta > 17 anni senza CC 1,0953 13
+161 6 C Interventi per ernia inguinale e femorale, eta > 17 anni con CC 0,9993 13
+162 6 C Interventi per ernia inguinale e femorale, eta > 17 anni senza CC 0,7448 7
+163 6 C Interventi per ernia, eta < 18 anni 0,6383 4
+164 6 C Appendicectomia con diagnosi principale complicata con CC 1,4998 21
+165 6 C Appendicectomia con diagnosi principale complicata senza CC 1,1181 14
+166 6 C Appendicectomia con diagnosi principale non complicata con CC 1,1639 14
+167 6 C Appendicectomia con diagnosi principale non complicata senza CC 0,8102 8
+168 3 C Interventi sulla bocca con CC 1,0520 10
+169 3 C Interventi sulla bocca senza CC 0,9013 7
+170 6 C Altri interventi sull'apparato digerente con CC 2,6806 47
+171 6 C Altri interventi sull'apparato digerente senza CC 1,6750 31
+172 6 M Neoplasie maligne dell'apparato digerente con CC 1,4942 37
+173 6 M Neoplasie maligne dell'apparato digerente senza CC 0,8939 28
+174 6 M Emorragia gastrointestinale con CC 1,0599 21
+175 6 M Emorragia gastrointestinale senza CC 0,6562 17
+176 6 M Ulcera peptica complicata 1,0127 20
+177 6 M Ulcera peptica non complicata con CC 0,9769 21
+178 6 M Ulcera peptica non complicata senza CC 0,7185 17
+179 6 M Malattie infiammatorie dell'intestino 1,0586 27
+180 6 M Occlusione gastrointestinale con CC 0,8868 23
+181 6 M Occlusione gastrointestinale senza CC 0,5614 14
+182 6 M Esofagite, gastroenterite e miscellanea di malattie dell'apparato digerente, eta >17 anni con CC 0,7681 20
+183 6 M Esofagite, gastroenterite e miscellanea di malattie dell'apparato digerente, eta > 17 anni senza CC 0,5568 13
+184 6 M Esofagite, gastroenterite e miscellanea di malattie dell'apparato digerente, eta < 18 anni 0,3014 7
+185 3 M Malattie dei denti e del cavo orale, eccetto estrazione e riparazione, eta > 17 anni 0,6621 18
+186 3 M Malattie dei denti e del cavo orale, eccetto estrazione e riparazione, eta < 18 anni 0,4601 10
+187 3 M Estrazioni e riparazioni dentali 0,5300 7
+188 6 M Altre diagnosi relative all'apparato digerente, eta > 17 anni con CC 1,0034 24
+189 6 M Altre diagnosi relative all'apparato digerente, eta > 17 anni senza CC 0,5224 14
+190 6 M Altre diagnosi relative all'apparato digerente, eta < 18 anni 0,3783 7
+191 7 C Interventi su pancreas, fegato e di shunt con CC 3,5599 57
+192 7 C Interventi su pancreas, fegato e di shunt senza CC 2,5966 37
+193 7 C Interventi sulle vie biliari eccetto colecistectomia isolata con o senza esplorazione del dotto biliare comune con CC 3,6085 60
+194 7 C Interventi sulle vie biliari, eccetto colecistectomia isolata con o senza esplorazione del dotto biliare comune senza CC 2,9871 51
+195 7 C Colecistectomia con esplorazione del dotto biliare comune con CC 2,4776 40
+196 7 C Colecistectomia con esplorazione del dotto biliare comune senza CC 2,1918 24
+197 7 C Colecistectomia eccetto laparoscopica senza esplorazione del dotto biliare comune con CC 2,4752 40
+198 7 C Colecistectomia eccetto laparoscopica senza esplorazione del dotto biliare comune senza CC 1,5546 24
+199 7 C Procedure diagnostiche epatobiliari per neoplasie maligne 2,2656 45
+200 7 C Procedure diagnostiche epatobiliari non per neoplasie maligne 2,7306 50
+201 7 C Altri interventi epatobiliari o sul pancreas 2,8743 51
+202 7 M Cirrosi e epatite alcolica 1,2862 27
+203 7 M Neoplasie maligne dell'apparato epatobiliare o del pancreas 1,2825 35
+204 7 M Malattie del pancreas eccetto neoplasie maligne 1,0518 24
+205 7 M Malattie del fegato eccetto neoplasie maligne, cirrosi, epatite alcolica con CC 1,1589 27
+206 7 M Malattie del fegato eccetto neoplasie maligne, cirrosi, epatite alcolica senza CC 0,8236 21
+207 7 M Malattie delle vie biliari con CC 1,1620 24
+208 7 M Malattie delle vie biliari senza CC 0,6681 17
+210 8 C Interventi su anca e femore, eccetto articolazioni maggiori, eta > 17 anni con CC 2,0942 32
+211 8 C Interventi su anca e femore, eccetto articolazioni maggiori, eta > 17 anni senza CC 1,7174 30
+212 8 C Interventi su anca e femore, eccetto articolazioni maggiori, eta < 18 anni 1,5008 28
+213 8 C Amputazioni per malattie del sistema muscolo-scheletrico e tessuto connettivo 2,2148 63
+216 8 C Biopsie del sistema muscolo-scheletrico e tessuto connettivo 1,3106 24
+217 8 C Sbrigliamento ferita e trapianto cutaneo eccetto mano, per malattie del sistema muscolo-scheletrico e tessuto connettivo 2,5978 45
+218 8 C Interventi su arto inferiore e omero eccetto anca, piede e femore, eta > 17 anni con CC 2,0194 31
+219 8 C Interventi su arto inferiore e omero eccetto anca, piede e femore, eta > 17 anni senza CC 1,3446 20
+220 8 C Interventi su arto inferiore e omero eccetto anca, piede e femore, eta < 18 anni 1,0869 17
+223 8 C Interventi maggiori su spalla e gomito o altri interventi su arto superiore con CC 1,0013 4
+224 8 C Interventi su spalla, gomito o avambraccio eccetto interventi maggiori su articolazioni senza CC 1,0375 13
+225 8 C Interventi sul piede 0,8826 7
+226 8 C Interventi sui tessuti molli con CC 1,5387 24
+227 8 C Interventi sui tessuti molli senza CC 0,8846 10
+228 8 C Interventi maggiori sul pollice o sulle articolazioni o altri interventi mano o polso con CC 0,9752 10
+229 8 C Interventi su mano o polso eccetto interventi maggiori sulle articolazioni, senza CC 0,7372 7
+230 8 C Escissione locale e rimozione di mezzi di fissaggio intramidollare di anca e femore 0,9325 13
+232 8 C Artroscopia 0,7595 7
+233 8 C Altri interventi su sistema muscolo-scheletrico e tessuto connettivo con CC 2,0269 34
+234 8 C Altri interventi su sistema muscolo-scheletrico e tessuto connettivo senza CC 1,2519 13
+235 8 M Fratture del femore 0,5858 23
+236 8 M Fratture dell'anca e della pelvi 0,6652 21
+237 8 M Distorsioni, stiramenti e lussazioni di anca, pelvi e coscia 0,6533 17
+238 8 M Osteomielite 1,7119 44
+239 8 M Fratture patologiche e neoplasie maligne del sistema muscolo-scheletrico e tessuto connettivo 1,1075 30
+240 8 M Malattie del tessuto connettivo con CC 1,2952 30
+241 8 M Malattie del tessuto connettivo senza CC 0,8096 20
+242 8 M Artrite settica 1,2626 40
+243 8 M Affezioni mediche del dorso 0,6837 21
+244 8 M Malattie dell'osso e artropatie specifiche con CC 0,8398 23
+245 8 M Malattie dell'osso e artropatie specifiche senza CC 0,5605 28
+246 8 M Artropatie non specifiche 0,6199 20
+247 8 M Segni e sintomi relativi al sistema muscolo-scheletrico e al tessuto connettivo 0,5435 17
+248 8 M Tendinite, miosite e borsite 0,7633 23
+249 8 M Assistenza riabilitativa per malattie del sistema muscolo-scheletrico e del tessuto connettivo 0,6192 18
+250 8 M Fratture, distorsioni, stiramenti e lussazioni di avambraccio, mano e piede, eta > 17 anni con CC 0,6694 16
+251 8 M Fratture, distorsioni, stiramenti e lussazioni di avambraccio, mano e piede, eta > 17 anni senza CC 0,4164 7
+252 8 M Fratture, distorsioni, stiramenti e lussazioni di avambraccio, mano e piede, eta < 18 anni 0,2983 4
+253 8 M Fratture, distorsioni, stiramenti e lussazioni di braccio, gamba, eccetto piede, eta > 17 anni con CC 0,7515 24
+254 8 M Fratture, distorsioni, stiramenti e lussazioni di braccio, gamba, eccetto piede, eta > 17 anni senza CC 0,4225 10
+255 8 M Fratture, distorsioni, stiramenti e lussazioni di braccio, gamba, eccetto piede, eta < 18 anni 0,3765 7
+256 8 M Altre diagnosi del sistema muscolo-scheletrico e del tessuto connettivo 0,6224 14
+257 9 C Mastectomia totale per neoplasie maligne con CC 1,2850 14
+258 9 C Mastectomia totale per neoplasie maligne senza CC 1,1697 14
+259 9 C Mastectomia subtotale per neoplasie maligne con CC 1,0107 13
+260 9 C Mastectomia subtotale per neoplasie maligne senza CC 0,8896 10
+261 9 C Interventi sulla mammella non per neoplasie maligne eccetto biopsia e escissione locale 1,1165 10
+262 9 C Biopsia della mammella e escissione locale non per neoplasie maligne 0,5990 7
+263 9 C Trapianti di pelle e/o sbrigliamenti per ulcere della pelle o cellulite con CC 2,3324 37
+264 9 C Trapianti di pelle e/o sbrigliamenti per ulcere pelle o cellulite senza CC 1,4659 37
+265 9 C Trapianti di pelle e/o sbrigliamenti eccetto per ulcere della pelle/cellulite con CC 1,2856 17
+266 9 C Trapianti di pelle e/o sbrigliamenti eccetto per ulcere della pelle/cellulite senza CC 0,9665 10
+267 9 C Interventi perianali e pilonidali 0,5312 7
+268 9 C Chirurgia plastica della pelle, del tessuto sottocutaneo e della mammella 1,2732 10
+269 9 C Altri interventi su pelle, tessuto sottocutaneo e mammella con CC 1,6138 31
+270 9 C Altri interventi su pelle, tessuto sottocutaneo e mammella senza CC 0,7668 7
+271 9 M Ulcere della pelle 1,2955 30
+272 9 M Malattie maggiori della pelle con CC 0,9417 27
+273 9 M Malattie maggiori della pelle senza CC 0,5861 20
+274 9 M Neoplasie maligne della mammella con CC 1,3320 34
+275 9 M Neoplasie maligne della mammella senza CC 0,6197 17
+276 9 M Patologie non maligne della mammella 0,4367 10
+277 9 M Cellulite, eta > 17 anni con CC 1,0480 30
+278 9 M Cellulite, eta > 17 anni senza CC 0,6153 21
+279 9 M Cellulite, eta < 18 anni 0,4545 10
+280 9 M Traumi della pelle, del tessuto sottocutaneo e della mammella, eta > 17 anni con CC 0,7470 17
+281 9 M Traumi della pelle, del tessuto sottocutaneo e della mammella, eta > 17 anni senza CC 0,6066 7
+282 9 M Traumi della pelle, del tessuto sottocutaneo e della mammella, eta < 18 anni 0,3376 4
+283 9 M Malattie minori della pelle con CC 0,7898 20
+284 9 M Malattie minori della pelle senza CC 0,4238 13
+285 10 C Amputazioni di arto inferiore per malattie endocrine, nutrizionali o metaboliche 2,5557 59
+286 10 C Interventi sul surrene e sulla ipofisi 1,9902 27
+287 10 C Trapianti cutanei e sbrigliamento di ferite per malattie endocrine, nutrizionali e metaboliche 1,9678 34
+288 10 C Interventi per obesita 1,8598 17
+289 10 C Interventi sulle paratiroidi 0,8732 11
+290 10 C Interventi sulla tiroide 0,9978 11
+291 10 C Interventi sul dotto tireoglosso 0,8181 7
+292 10 C Altri interventi per malattie endocrine, nutrizionali e metaboliche con CC 2,2587 27
+293 10 C Altri interventi per malattie endocrine, nutrizionali e metaboliche senza CC 1,4772 14
+294 10 M Diabete, eta > 35 anni 0,9845 20
+295 10 M Diabete, eta < 36 anni 0,6016 17
+296 10 M Disturbi della nutrizione e miscellanea di disturbi del metabolismo, eta > 17 anni con CC 0,8593 23
+297 10 M Disturbi della nutrizione e miscellanea di disturbi del metabolismo, eta > 17 anni senza CC 0,5604 21
+298 10 M Disturbi della nutrizione e miscellanea di disturbi del metabolismo, eta < 18 anni 0,2651 7
+299 10 M Difetti congeniti del metabolismo 0,6979 17
+300 10 M Malattie endocrine con CC 0,9965 20
+301 10 M Malattie endocrine senza CC 0,5049 17
+302 11 C Trapianto renale 10,2927 42
+303 11 C Interventi su rene e uretere per neoplasia 1,9629 25
+304 11 C Interventi su rene e uretere, non per neoplasia con CC 1,8026 34
+305 11 C Interventi su rene e uretere, non per neoplasia senza CC 1,5231 20
+306 11 C Prostatectomia con CC 1,2221 18
+307 11 C Prostatectomia senza CC 1,0155 14
+308 11 C Interventi minori sulla vescica con CC 1,5522 24
+309 11 C Interventi minori sulla vescica senza CC 1,0453 13
+310 11 C Interventi per via transuretrale con CC 1,0057 17
+311 11 C Interventi per via transuretrale senza CC 0,7204 10
+312 11 C Interventi sull'uretra, eta > 17 anni con CC 1,1378 17
+313 11 C Interventi sull'uretra, eta > 17 anni senza CC 1,0316 10
+314 11 C Interventi sull'uretra, eta < 18 anni 1,2121 17
+315 11 C Altri interventi sul rene e sulle vie urinarie 2,0141 41
+316 11 M Insufficienza renale 1,1501 27
+317 11 M Ricovero per dialisi renale 0,6553 1
+318 11 M Neoplasie del rene e delle vie urinarie con CC 1,2854 34
+319 11 M Neoplasie del rene e delle vie urinarie senza CC 0,6912 17
+320 11 M Infezioni del rene e delle vie urinarie, eta > 17 anni con CC 0,8462 23
+321 11 M Infezioni del rene e delle vie urinarie, eta > 17 anni senza CC 0,6057 17
+322 11 M Infezioni del rene e delle vie urinarie, eta < 18 anni 0,4272 11
+323 11 M Calcolosi urinaria con CC e/o litotripsia mediante ultrasuoni 0,5520 10
+324 11 M Calcolosi urinaria senza CC 0,4010 10
+325 11 M Segni e sintomi relativi a rene e vie urinarie, eta > 17 anni con CC 0,6193 17
+326 11 M Segni e sintomi relativi a rene e vie urinarie, eta > 17 anni senza CC 0,4283 10
+327 11 M Segni e sintomi relativi a rene e vie urinarie, eta < 18 anni 0,3400 7
+328 11 M Stenosi uretrale, eta > 17 anni con CC 0,6628 17
+329 11 M Stenosi uretrale, eta > 17 anni senza CC 0,4816 10
+330 11 M Stenosi uretrale, eta < 18 anni 0,2655 7
+331 11 M Altre diagnosi relative a rene e vie urinarie, eta > 17 anni con CC 1,0467 27
+332 11 M Altre diagnosi relative a rene e vie urinarie, eta > 17 anni senza CC 0,6109 17
+333 11 M Altre diagnosi relative a rene e vie urinarie, eta < 18 anni 0,6084 13
+334 12 C Interventi maggiori sulla pelvi maschile con CC 2,2241 20
+335 12 C Interventi maggiori sulla pelvi maschile senza CC 1,9084 16
+336 12 C Prostatectomia transuretrale con CC 1,0273 15
+337 12 C Prostatectomia transuretrale senza CC 0,8688 11
+338 12 C Interventi sul testicolo per neoplasia maligna 0,9144 10
+339 12 C Interventi sul testicolo non per neoplasie maligne, eta > 17 anni 0,6763 7
+340 12 C Interventi sul testicolo non per neoplasie maligne, eta < 18 anni 0,5987 4
+341 12 C Interventi sul pene 1,2213 13
+342 12 C Circoncisione, eta > 17 anni 0,5593 4
+343 12 C Circoncisione, eta < 18 anni 0,2944 4
+344 12 C Altri interventi sull'apparato riproduttivo maschile per neoplasie maligne 0,9423 17
+345 12 C Altri interventi sull'apparato riproduttivo maschile eccetto per neoplasie maligne 0,9432 17
+346 12 M Neoplasie maligne dell'apparato genitale maschile con CC 1,1847 35
+347 12 M Neoplasie maligne dell'apparato genitale maschile senza CC 0,6095 10
+348 12 M Ipertrofia prostatica benigna con CC 0,6199 21
+349 12 M Ipertrofia prostatica benigna senza CC 0,4249 10
+350 12 M Infiammazioni dell'apparato riproduttivo maschile 0,5708 13
+351 12 M Sterilizzazione maschile 0,1967 6
+352 12 M Altre diagnosi relative all'apparato riproduttivo maschile 0,4639 7
+353 13 C Eviscerazione pelvica, isterectomia radicale e vulvectomia radicale 1,7728 22
+354 13 C Interventi su utero e su annessi per neoplasie maligne non dell'ovaio o degli annessi con CC 2,0274 37
+355 13 C Interventi su utero e su annessi per neoplasie maligne non dell'ovaio o degli annessi senza CC 1,2687 15
+356 13 C Interventi ricostruttivi dell'apparato riproduttivo femminile 0,9206 11
+357 13 C Interventi su utero e annessi per neoplasie maligne dell'ovaio o degli annessi 1,7499 27
+358 13 C Interventi su utero e annessi non per neoplasie maligne con CC 1,3388 15
+359 13 C Interventi su utero e annessi non per neoplasie maligne senza CC 0,9785 11
+360 13 C Interventi su vagina, cervice e vulva 0,8575 10
+361 13 C Laparoscopia e occlusione laparotomica delle tube 0,7171 7
+362 13 C Occlusione endoscopica delle tube 0,5599 4
+363 13 C Dilatazione e raschiamento, conizzazione e impianto materiale radioattivo per neoplasie maligne 0,7937 10
+364 13 C Dilatazione e raschiamento, conizzazione eccetto per neoplasie maligne 0,5395 4
+365 13 C Altri interventi sull'apparato riproduttivo femminile 1,2244 23
+366 13 M Neoplasie maligne apparato riproduttivo femminile con CC 1,3793 37
+367 13 M Neoplasie maligne dell'apparato riproduttivo femminile senza CC 0,6447 21
+368 13 M Infezioni dell'apparato riproduttivo femminile 0,5307 10
+369 13 M Disturbi mestruali e altri disturbi dell'apparato riproduttivo femminile 0,4208 7
+370 14 C Parto cesareo con CC 0,9635 14
+371 14 C Parto cesareo senza CC 0,7334 6
+372 14 M Parto vaginale con diagnosi complicanti 0,5649 8
+373 14 M Parto vaginale senza diagnosi complicanti 0,4439 5
+374 14 C Parto vaginale con sterilizzazione e/o dilatazione e raschiamento 0,6946 8
+375 14 C Parto vaginale con altro intervento eccetto sterilizzazione e/o dilatazione e raschiamento 0,9140 8
+376 14 M Diagnosi relative a postparto e postaborto senza intervento chirurgico 0,4582 10
+377 14 C Diagnosi relative a postparto e postaborto con intervento chirurgico 0,7871 7
+378 14 M Gravidanza ectopica 0,5765 10
+379 14 M Minaccia di aborto 0,4424 10
+380 14 M Aborto senza dilatazione e raschiamento 0,3888 7
+381 14 C Aborto con dilatazione e raschiamento, mediante aspirazione o isterotomia 0,4568 4
+382 14 M Falso travaglio 0,2032 4
+383 14 M Altre diagnosi preparto con complicazioni mediche 0,4019 10
+384 14 M Altre diagnosi preparto senza complicazioni mediche 0,3964 14
+385 15 M Neonati morti o trasferiti ad altre strutture di assistenza per acuti 0,6891 4
+386 15 M Neonati gravemente immaturi o con sindrome da distress respiratorio 8,6877 135
+387 15 M Prematurita con affezioni maggiori 3,5317 51
+388 15 M Prematurita senza affezioni maggiori 0,8326 20
+389 15 M Neonati a termine con affezioni maggiori 0,7041 11
+390 15 M Neonati con altre affezioni significative 0,2085 5
+391 15 M Neonato normale 0,1598 5
+392 16 C Splenectomia, eta > 17 anni 1,9909 22
+393 16 C Splenectomia, eta < 18 anni 1,1225 13
+394 16 C Altri interventi sugli organi emopoietici 1,1177 17
+395 16 M Anomalie dei globuli rossi, eta > 17 anni 0,8552 23
+396 16 M Anomalie dei globuli rossi, eta < 18 anni 0,5775 13
+397 16 M Disturbi della coagulazione 0,9347 20
+398 16 M Disturbi sistema reticoloendoteliale e immunitario con CC 1,2182 27
+399 16 M Disturbi sistema reticoloendoteliale e immunitario senza CC 0,6982 17
+401 17 C Linfoma e leucemia non acuta con altri interventi chirurgici con CC 3,0119 55
+402 17 C Linfoma e leucemia non acuta con altri interventi chirurgici senza CC 1,4116 24
+403 17 M Linfoma e leucemia non acuta con CC 1,8616 40
+404 17 M Linfoma e leucemia non acuta senza CC 1,1010 24
+405 17 M Leucemia acuta senza interventi chirurgici maggiori, eta < 18 anni 2,9459 86
+406 17 C Alterazioni mieloproliferative o neoplasie poco differenziate con interventi maggiori con CC 2,9175 43
+407 17 C Alterazioni mieloproliferative o neoplasie poco differenziate con interventi maggiori senza CC 1,8956 27
+408 17 C Alterazioni mieloproliferative o neoplasie poco differenziate con altri interventi 1,4917 13
+409 17 M Radioterapia 0,8811 31
+410 17 M Chemioterapia non associata a diagnosi secondaria di leucemia acuta 0,7539 7
+411 17 M Anamnesi di neoplasia maligna senza endoscopia 0,4822 13
+412 17 M Anamnesi di neoplasia maligna con endoscopia 0,4948 10
+413 17 M Altre alterazioni mieloproliferative e neoplasie poco differenziate con CC 1,4888 41
+414 17 M Altre alterazioni mieloproliferative e neoplasie poco differenziate senza CC 0,9668 32
+417 18 M Setticemia, eta < 18 anni 0,9563 17
+418 18 M Infezioni post-chirurgiche e post-traumatiche 1,0619 23
+419 18 M Febbre di origine sconosciuta, eta > 17 anni con CC 0,8455 20
+420 18 M Febbre di origine sconosciuta, eta > 17 anni senza CC 0,6372 21
+421 18 M Malattie di origine virale, eta > 17 anni 0,6643 14
+422 18 M Malattie di origine virale e febbre di origine sconosciuta, eta < 18 anni 0,3634 10
+423 18 M Altre diagnosi relative a malattie infettive e parassitarie 1,2815 24
+424 19 C Interventi chirurgici di qualunque tipo in pazienti con diagnosi principale di malattia mentale 1,6764 39
+425 19 M Reazione acuta di adattamento e disfunzione psicosociale 0,5422 21
+426 19 M Nevrosi depressive 0,3902 31
+427 19 M Nevrosi eccetto nevrosi depressive 0,3937 27
+428 19 M Disturbi della personalita e del controllo degli impulsi 0,6989 41
+429 19 M Disturbi organici e ritardo mentale 0,7933 27
+430 19 M Psicosi 0,7668 44
+431 19 M Disturbi mentali dell'infanzia 0,4865 21
+432 19 M Altre diagnosi relative a disturbi mentali 0,5406 21
+433 20 M Abuso o dipendenza da alcool/farmaci; dimesso contro il parere dei sanitari 0,1297 4
+439 21 C Trapianti di pelle per traumatismo 1,4074 17
+440 21 C Sbrigliamento di ferite per traumatismo 1,2893 28
+441 21 C Interventi sulla mano per traumatismo 1,0153 10
+442 21 C Altri interventi chirurgici per traumatismo con CC 2,6634 51
+443 21 C Altri interventi chirurgici per traumatismo senza CC 1,2447 13
+444 21 M Traumatismi, eta > 17 anni con CC 0,8337 21
+445 21 M Traumatismi, eta > 17 anni senza CC 0,6198 10
+446 21 M Traumatismi, eta < 18 anni 0,3585 4
+447 21 M Reazioni allergiche, eta > 17 anni 0,4565 10
+448 21 M Reazioni allergiche, eta < 18 anni 0,2344 7
+449 21 M Avvelenamenti ed effetti tossici farmaci, eta > 17 anni con CC 0,7386 21
+450 21 M Avvelenamenti ed effetti tossici dei farmaci, eta > 17 anni senza CC 0,4109 10
+451 21 M Avvelenamenti ed effetti tossici dei farmaci, eta < 18 anni 0,2938 4
+452 21 M Complicazioni di trattamenti con CC 1,0604 27
+453 21 M Complicazioni di trattamenti senza CC 0,4896 18
+454 21 M Altre diagnosi di traumatismi, avvelenamenti ed effetti tossici con CC 0,7653 18
+455 21 M Altre diagnosi di traumatismi, avvelenamenti ed effetti tossici senza CC 0,5954 10
+461 23 C Intervento con diagnosi di altro contatto con i servizi sanitari 1,5238 21
+462 23 M Riabilitazione 0,7570 37
+463 23 M Segni e sintomi con CC 0,8004 31
+464 23 M Segni e sintomi senza CC 0,5041 23
+465 23 M Assistenza riabilitativa con anamnesi di neoplasia maligna come diagnosi secondaria 0,4836 7
+466 23 M Assistenza riabilitativa senza anamnesi di neoplasia maligna come diagnosi secondaria 0,6630 10
+467 23 M Altri fattori che influenzano lo stato di salute 0,2583 10
+468 NA C Intervento chirurgico esteso non correlato con la diagnosi principale 2,8661 39
+469 NA NA Diagnosi principale non valida come diagnosi di dimissione 0,0000 10
+470 NA NA Non attribuibile ad altro DRG 0,0000 41
+471 8 C Interventi maggiori bilaterali o multipli sulle articolazioni degli arti inferiori 2,4714 30
+473 17 M Leucemia acuta senza interventi chirurgici maggiori, eta > 17 anni 4,2095 81
+476 NA C Intervento chirurgico sulla prostata non correlato con la diagnosi principale 1,7590 20
+477 NA C Intervento chirurgico non esteso non correlato con la diagnosi principale 1,7604 32
+479 5 C Altri interventi sul sistema cardiovascolare senza CC 1,6087 21
+480 Pre C Trapianto di fegato e/o trapianto di intestino 19,4443 61
+481 Pre C Trapianto di midollo osseo 15,5111 46
+482 Pre C Tracheostomia per diagnosi relative a faccia, bocca e collo 3,7723 61
+484 24 C Craniotomia per traumatismi multipli rilevanti 5,0987 73
+485 24 C Reimpianto di arti, interventi su anca e femore per traumatismi multipli rilevanti 4,4919 42
+486 24 C Altri interventi chirurgici per traumatismi multipli rilevanti 4,6091 50
+487 24 M Altri traumatismi multipli rilevanti 1,7349 37
+488 25 C H.I.V. associato ad intervento chirurgico esteso 4,1670 112
+489 25 M H.I.V. associato ad altre patologie maggiori correlate 2,4149 58
+490 25 M H.I.V. associato o non ad altre patologie correlate 1,1973 31
+491 8 C Interventi su articolazioni maggiori e reimpianti di arti superiori 1,9828 24
+492 17 M Chemioterapia associata a diagnosi secondaria di leucemia acuta o con uso di alte dosi di agenti chemioterapici 1,4945 51
+493 7 C Colecistectomia laparoscopica senza esplorazione del dotto biliare comune con CC 1,5285 30
+494 7 C Colecistectomia laparoscopica senza esplorazione del dotto biliare comune senza CC 0,8890 10
+495 Pre C Trapianto di polmone 16,8871 78
+496 8 C Artrodesi vertebrale con approccio anteriore/posteriore combinato 5,1811 45
+497 8 C Artrodesi verterbale eccetto cervicale con CC 3,8451 35
+498 8 C Artrodesi vertebrale eccetto cervicale senza CC 3,2406 24
+499 8 C Interventi su dorso e collo eccetto per artrodesi vertebrale con CC 1,6629 27
+500 8 C Interventi su dorso e collo eccetto per artrodesi vertebrale senza CC 1,2589 14
+501 8 C Interventi sul ginocchio con diagnosi principale di infezione con CC 2,1467 92
+502 8 C Interventi sul ginocchio con diagnosi principale di infezione senza CC 1,1595 51
+503 8 C Interventi sul ginocchio senza diagnosi principale di infezione 0,9222 7
+504 22 C Ustioni estese o ustioni a tutto spessore con ventilazione meccanica >= 96 ore con innesto di cute 9,8973 108
+505 22 M Ustioni estese o ustioni a tutto spessore con ventilazione meccanica >= 96 ore senza innesto di cute 2,1388 71
+506 22 C Ustioni estese a tutto spessore con innesto di cute o lesione da inalazione con CC o trauma significativo 3,0751 87
+507 22 C Ustioni estese a tutto spessore con innesto di cute o lesione da inalazione senza CC o trauma significativo 2,7979 65
+508 22 M Ustioni estese a tutto spessore senza innesto di cute o lesione da inalazione con CC o trauma significativo 1,1500 67
+509 22 M Ustioni estese a tutto spessore senza innesto di cute o lesione da inalazione senza CC o trauma significativo 1,1302 32
+510 22 M Ustioni non estese con CC o trauma significativo 1,3587 53
+511 22 M Ustioni non estese senza CC o trauma significativo 1,0977 24
+512 Pre C Trapianto simultaneo di pancreas/rene 15,7658 68
+513 Pre C Trapianto di pancreas 14,3046 53
+515 5 C Impianto di defibrillatore cardiaco senza cateterismo cardiaco 4,0897 31
+518 5 C Interventi sul sistema cardiovascolare per via percutanea senza inserzione di stent nell'arteria coronarica senza IMA 1,2185 7
+519 8 C Artrodesi verterbrale cervicale con CC 3,1524 46
+520 8 C Artrodesi vertebrale cervicale senza CC 2,1786 17
+521 20 M Abuso o dipendenza da alcool/farmaci con CC 0,8717 27
+522 20 M Abuso o dipendenza da alcool/farmaci con terapia riabilitativa senza CC 0,8746 45
+523 20 M Abuso o dipendenza da alcool/farmaci senza terapia riabilitativa senza CC 0,5366 24
+524 1 M Ischemia cerebrale transitoria 0,7692 17
+525 5 C Impianto di altro sistema di assistenza cardiaca 9,9320 47
+528 1 C Interventi vascolari intracranici con diagnosi principale di emorragia 5,7260 48
+529 1 C Interventi di anastomosi ventricolare con CC 3,7579 75
+530 1 C Interventi di anastomosi ventricolare senza CC 1,9981 33
+531 1 C Interventi sul midollo spinale con CC 3,9401 47
+532 1 C Interventi sul midollo spinale senza CC 2,2015 24
+533 1 C Interventi vascolari extracranici con CC 1,2985 20
+534 1 C Interventi vascolari extracranici senza CC 1,2022 11
+535 5 C Impianto di defibrillatore cardiaco con cateterismo cardiaco con infarto miocardico acuto, insufficienza cardiaca o shock 6,3257 41
+536 5 C Impianto di defibrillatore cardiaco con cateterismo cardiaco senza infarto miocardico acuto, insufficienza cardiaca o shock 5,3077 33
+537 8 C Escissione locale e rimozione di mezzi di fissazione interna eccetto anca e femore con CC 1,6372 28
+538 8 C Escissione locale e rimozione di mezzi di fissazione interna eccetto anca e femore senza CC 0,9419 7
+539 17 C Linfoma e leucemia con interventi chirurgici maggiori con CC 3,4880 50
+540 17 C Linfoma e leucemia con interventi chirurgici maggiori senza CC 1,5462 24
+541 Pre C Ossigenazione extracorporea a membrane o tracheostomia con ventilazione meccanica >= 96 ore o diagnosi principale non relativa a faccia, bocca e collo con intervento chirurgico maggiore 12,4289 117
+542 Pre C Tracheostomia con ventilazione meccanica >= 96 ore o diagnosi principale non relativa a faccia, bocca e collo senza intervento chirurgico maggiore 8,5360 104
+543 1 C Craniotomia con impianto di dispositivo maggiore o diagnosi principale di patologia acuta complessa del sistema nervoso centrale 3,9376 51
+544 8 C Sostituzione di articolazioni maggiori o reimpianto degli arti inferiori 2,0283 22
+545 8 C Revisione di sostituzione dell'anca o del ginocchio 2,7175 34
+546 8 C Artrodesi verterbale eccetto cervicale con deviazione della colonna vertebrale o neoplasia maligna 5,0089 31
+547 5 C Bypass coronarico con cateterismo cardiaco con diagnosi cardiovascolare maggiore 5,0871 39
+548 5 C Bypass coronarico con cateterismo cardiaco senza diagnosi cardiovascolare maggiore 4,3489 29
+549 5 C Bypass coronarico senza cateterismo cardiaco con diagnosi cardiovascolare maggiore 3,7801 28
+550 5 C Bypass coronarico senza cateterismo cardiaco senza diagnosi cardiovascolare maggiore 3,2209 20
+551 5 C Impianto di pacemaker cardiaco permanente con diagnosi cardiovascolare maggiore o di defibrillatore automatico (AICD) o di generatore di impulsi 2,3045 31
+552 5 C Altro impianto di pacemaker cardiaco permanente senza diagnosi cardiovascolare maggiore 1,5894 14
+553 5 C Altri interventi vascolari con CC con diagnosi cardiovascolare maggiore 2,6490 49
+554 5 C Altri interventi vascolari con CC senza diagnosi cardiovascolare maggiore 2,0662 31
+555 5 C Interventi sul sistema cardiovascolare per via percutanea con diagnosi cardiovascolare maggiore 1,8899 17
+556 5 C Interventi sul sistema cardiovascolare per via percutanea con stent non medicato senza diagnosi cardiovascolare maggiore 1,3742 10
+557 5 C Interventi sul sistema cardiovascolare per via percutanea con stent medicato con diagnosi cardiovascolare maggiore 2,2433 *
+558 5 C Interventi sul sistema cardiovascolare per via percutanea con stent medicato senza diagnosi cardiovascolare maggiore 1,6907 *
+559 1 M Ictus ischemico acuto con uso di agenti trombolitici 1,8296 *
+560 1 M Infezioni batteriche e tubercolosi del sistema nervoso 2,5059 43
+561 1 M Infezioni non batteriche del sistema nervoso eccetto meningite virale 1,7668 37
+562 1 M Convulsioni, eta > 17 anni con CC 0,9526 20
+563 1 M Convulsioni, eta > 17 anni senza CC 0,7306 17
+564 1 M Cefalea, eta > 17 anni 0,6184 23
+565 4 M Diagnosi relative all'apparato respiratorio con respirazione assistita >= 96 ore 4,0374 50
+566 4 M Diagnosi relative all'apparato respiratorio con respirazione assistita < 96 ore 2,1122 46
+567 6 C Interventi su esofago, stomaco e duodeno, eta > 17 anni con CC con diagnosi gastrointestinale maggiore 3,8842 47
+568 6 C Interventi su esofago, stomaco e duodeno, eta > 17 anni con CC senza diagnosi gastrointestinale maggiore 3,5475 48
+569 6 C Interventi maggiori su intestino crasso e tenue con CC con diagnosi gastrointestinale maggiore 3,3881 50
+570 6 C Interventi maggiori su intestino crasso e tenue con CC senza diagnosi gastrointestinale maggiore 2,7406 45
+571 6 M Malattie maggiori dell'esofago 1,0881 24
+572 6 M Malattie gastrointestinali maggiori e infezioni peritoneali 0,9446 20
+573 11 C Interventi maggiori sulla vescica 3,5032 43
+574 16 M Diagnosi ematologiche/immunologiche maggiori eccetto anemia falciforme e coagulopatie 1,1305 27
+575 18 M Setticemia con ventilazione meccanica >= 96 ore, eta > 17 anni 4,7782 65
+576 18 M Setticemia senza ventilazione meccanica >= 96 ore, eta > 17 anni 1,6432 37
+577 1 C Inserzione di stent carotideo 1,4507 *
+578 18 C Malattie infettive e parassitarie con intervento chirurgico 4,4004 82
+579 18 C Infezioni post-operatorie o post-traumatiche con intervento chirurgico 2,3908 44`;
+
+function parseDRG(raw) {
+  const lines = raw.split('\n');
+  const out = [];
+  const re = /^(\d{3})\s+(\S+)\s+(\S+)\s+(.+?)\s+(\d+,\d+)\s+(\d+|\*)\s*$/;
+  for (const line of lines) {
+    const m = line.match(re);
+    if (!m) continue;
+    out.push({
+      code: m[1],
+      mdc: m[2],
+      tipo: m[3],
+      descrizione: m[4].trim(),
+      peso: parseFloat(m[5].replace(',', '.')),
+      soglia: m[6] === '*' ? null : parseInt(m[6], 10)
+    });
+  }
+  return out;
+}
+
+function normalize(s) {
+  return s.toLowerCase()
+    .replace(/[À-ÿ]/g, c => {
+      const map = {
+        'à':'a','á':'a','â':'a','ã':'a','ä':'a',
+        'è':'e','é':'e','ê':'e','ë':'e',
+        'ì':'i','í':'i','î':'i','ï':'i',
+        'ò':'o','ó':'o','ô':'o','õ':'o','ö':'o',
+        'ù':'u','ú':'u','û':'u','ü':'u',
+        'ç':'c','ñ':'n'
+      };
+      return map[c] || c;
+    });
+}
+
+const DATA = parseDRG(RAW_DRG_DATA);
+
+const state = {
+  query: '',
+  tipo: '',
+  selected: new Map()
+};
+
+const $results = document.getElementById('results');
+const $selected = document.getElementById('selected');
+const $resultCount = document.getElementById('resultCount');
+const $selCount = document.getElementById('selCount');
+const $summary = document.getElementById('summary');
+const $search = document.getElementById('searchInput');
+const $filterTipo = document.getElementById('filterTipo');
+const $clearBtn = document.getElementById('clearBtn');
+const $dbCount = document.getElementById('dbCount');
+const $selStat = document.getElementById('selStat');
+$dbCount.textContent = String(DATA.length).padStart(4, '0');
+
+function tipoBadge(tipo) {
+  const cls = tipo === 'C' ? 'badge-C' : tipo === 'M' ? 'badge-M' : 'badge-NA';
+  return '<span class="badge ' + cls + '">' + tipo + '</span>';
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function filterData() {
+  const q = normalize(state.query.trim());
+  const tokens = q.split(/\s+/).filter(Boolean);
+  const out = DATA.filter(d => {
+    if (state.tipo && d.tipo !== state.tipo) return false;
+    if (tokens.length === 0) return true;
+    const hay = normalize(d.code + ' ' + d.mdc + ' ' + d.tipo + ' ' + d.descrizione);
+    return tokens.every(t => hay.includes(t));
+  });
+  out.sort((a, b) => b.peso - a.peso);
+  return out;
+}
+
+function renderResults() {
+  const filtered = filterData();
+  $resultCount.textContent = String(filtered.length).padStart(4, '0');
+  if (filtered.length === 0) {
+    $results.innerHTML = '<div class="empty">no match // null result</div>';
+    return;
+  }
+  const limit = 200;
+  const slice = filtered.slice(0, limit);
+  let html = slice.map(d => {
+    const sel = state.selected.has(d.code) ? ' selected-row' : '';
+    return '<div class="item' + sel + '" data-code="' + d.code + '">' +
+      '<div class="info">' +
+        '<div><span class="code">DRG ' + d.code + '</span> ' + tipoBadge(d.tipo) + ' <span class="meta">MDC ' + d.mdc + '</span></div>' +
+        '<div class="desc">' + escapeHtml(d.descrizione) + '</div>' +
+        '<div><span class="meta">Soglia: ' + (d.soglia === null ? 'n.d.' : d.soglia + ' gg') + '</span></div>' +
+      '</div>' +
+      '<div class="peso">' + d.peso.toFixed(4).replace('.', ',') + '</div>' +
+    '</div>';
+  }).join('');
+  if (filtered.length > limit) {
+    html += '<div class="empty">+' + (filtered.length - limit) + ' nodi nascosti // restringi la query</div>';
+  }
+  $results.innerHTML = html;
+}
+
+function renderSelected() {
+  $selCount.textContent = String(state.selected.size).padStart(2, '0');
+  $selStat.textContent = String(state.selected.size).padStart(2, '0');
+  if (state.selected.size === 0) {
+    $selected.innerHTML = '<div class="empty">buffer empty // click su un nodo per aggiungerlo al compare</div>';
+    $summary.innerHTML = '';
+    return;
+  }
+  const items = Array.from(state.selected.values()).sort((a, b) => b.peso - a.peso);
+  const maxPeso = items[0].peso;
+  $selected.innerHTML = items.map(d => {
+    const winnerCls = d.peso === maxPeso && items.length > 1 ? ' winner' : '';
+    return '<div class="item' + winnerCls + '">' +
+      '<div class="info">' +
+        '<div><span class="code">DRG ' + d.code + '</span> ' + tipoBadge(d.tipo) + ' <span class="meta">MDC ' + d.mdc + '</span></div>' +
+        '<div class="desc">' + escapeHtml(d.descrizione) + '</div>' +
+        '<div><span class="meta">Soglia: ' + (d.soglia === null ? 'n.d.' : d.soglia + ' gg') + '</span></div>' +
+      '</div>' +
+      '<div class="peso">' + d.peso.toFixed(4).replace('.', ',') + '</div>' +
+      '<button class="remove-x" data-remove="' + d.code + '" title="Rimuovi">x</button>' +
+    '</div>';
+  }).join('');
+  const winner = items[0];
+  if (items.length > 1) {
+    $summary.innerHTML = 'winner: drg <strong>' + winner.code + '</strong> // peso <strong>' + winner.peso.toFixed(4).replace('.', ',') + '</strong> // ' + items.length + ' nodi confrontati';
+  } else {
+    $summary.innerHTML = 'awaiting input // seleziona almeno 2 DRG per il confronto';
+  }
+}
+
+$search.addEventListener('input', e => {
+  state.query = e.target.value;
+  renderResults();
+});
+
+$filterTipo.addEventListener('change', e => {
+  state.tipo = e.target.value;
+  renderResults();
+});
+
+$results.addEventListener('click', e => {
+  const item = e.target.closest('.item');
+  if (!item || !item.hasAttribute('data-code')) return;
+  const code = item.getAttribute('data-code');
+  if (state.selected.has(code)) {
+    state.selected.delete(code);
+  } else {
+    const drg = DATA.find(d => d.code === code);
+    if (drg) state.selected.set(code, drg);
+  }
+  renderResults();
+  renderSelected();
+});
+
+$selected.addEventListener('click', e => {
+  const btn = e.target.closest('[data-remove]');
+  if (!btn) return;
+  e.stopPropagation();
+  state.selected.delete(btn.getAttribute('data-remove'));
+  renderResults();
+  renderSelected();
+});
+
+$clearBtn.addEventListener('click', () => {
+  state.selected.clear();
+  renderResults();
+  renderSelected();
+});
+
+renderResults();
+renderSelected();
+</script>
+</body>
+</html>
